@@ -36,23 +36,32 @@ bool init()
     // Initialise SDL
     if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
     {
-        printf( "SDL could not initialise. SDL_Error: %s\n", SDL_GetError() );
+        printf( "SDL could not initialise. SDL Error: %s\n", SDL_GetError() );
         success = false;
     }
     else
     {
         // Create window
         gWindow = SDL_CreateWindow( "Window Title Goes Here!", 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
-
         if( gWindow == NULL )
         {
-            printf( "Window could not be created. SDL_Error: %s\n", SDL_GetError() );
+            printf( "Window could not be created. SDL Error: %s\n", SDL_GetError() );
             success = false;
         }
         else
         {
-            // Get window surface
-            gScreenSurface = SDL_GetWindowSurface( gWindow );
+            // Initialise PNG loading
+            int imgFlags = IMG_INIT_PNG;
+            if( !( IMG_Init( imgFlags ) & imgFlags ) )
+            {
+                printf( "SDL image could not be initialised. SDL Error: %s\n", IMG_GetError() );
+                success = false;
+            }
+            else
+            {
+                // Get window surface
+                gScreenSurface = SDL_GetWindowSurface( gWindow );
+            }
         }
     }
 
@@ -91,35 +100,35 @@ bool loadMedia()
 {
     bool success = true;
 
-    gKeyPressSurfaces[ KEY_PRESS_SURFACE_DEFAULT ] = gLoadSurface = SDL_LoadBMP( "images/default.bmp" );
+    gKeyPressSurfaces[ KEY_PRESS_SURFACE_DEFAULT ] = gLoadSurface = IMG_Load( "src/images/default.bmp" );
     if( gLoadSurface == NULL )
     {
         printf( "Unable to load default image SDL_Error: %s\n", SDL_GetError() );
         success = false;
     }
 
-    gKeyPressSurfaces[ KEY_PRESS_SURFACE_UP ] = gLoadSurface = SDL_LoadBMP( "images/up.bmp" );
+    gKeyPressSurfaces[ KEY_PRESS_SURFACE_UP ] = gLoadSurface = IMG_Load( "src/images/up.bmp" );
     if( gLoadSurface == NULL )
     {
         printf( "Unable to load default image SDL_Error: %s\n", SDL_GetError() );
         success = false;
     }
 
-    gKeyPressSurfaces[ KEY_PRESS_SURFACE_DOWN ] = gLoadSurface = SDL_LoadBMP( "images/down.bmp" );
+    gKeyPressSurfaces[ KEY_PRESS_SURFACE_DOWN ] = gLoadSurface = IMG_Load( "src/images/down.bmp" );
     if( gLoadSurface == NULL )
     {
         printf( "Unable to load default image SDL_Error: %s\n", SDL_GetError() );
         success = false;
     }
 
-    gKeyPressSurfaces[ KEY_PRESS_SURFACE_LEFT ] = gLoadSurface = SDL_LoadBMP( "images/left.bmp" );
+    gKeyPressSurfaces[ KEY_PRESS_SURFACE_LEFT ] = gLoadSurface = IMG_Load( "src/images/left.bmp" );
     if( gLoadSurface == NULL )
     {
         printf( "Unable to load default image SDL_Error: %s\n", SDL_GetError() );
         success = false;
     }
 
-    gKeyPressSurfaces[ KEY_PRESS_SURFACE_RIGHT ] = gLoadSurface = SDL_LoadBMP( "images/right.bmp" );
+    gKeyPressSurfaces[ KEY_PRESS_SURFACE_RIGHT ] = gLoadSurface = IMG_Load( "src/images/right.bmp" );
     if( gLoadSurface == NULL )
     {
         printf( "Unable to load default image SDL_Error: %s\n", SDL_GetError() );
