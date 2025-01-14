@@ -186,11 +186,8 @@ int main( int argc, char* args[] )
             return 1;
         }
 
-        gTexture = gKeyPressTexture[ KEY_PRESS_SURFACE_DEFAULT ];
-
         while( !quit )
         {
-
             while( SDL_PollEvent( &e ) != 0 )
             {
                 if( e.type == SDL_QUIT )
@@ -205,24 +202,7 @@ int main( int argc, char* args[] )
                         quit = true;
                         break;
 
-                    case SDLK_UP:
-                        gTexture = gKeyPressTexture[ KEY_PRESS_SURFACE_UP ];
-                        break;
-                    
-                    case SDLK_DOWN:
-                        gTexture = gKeyPressTexture[ KEY_PRESS_SURFACE_DOWN ];
-                        break;
-
-                    case SDLK_LEFT:
-                        gTexture = gKeyPressTexture[ KEY_PRESS_SURFACE_LEFT ];
-                        break;
-
-                    case SDLK_RIGHT:
-                        gTexture = gKeyPressTexture[ KEY_PRESS_SURFACE_RIGHT ];
-                        break;
-
                     default:
-                        gTexture = gKeyPressTexture[ KEY_PRESS_SURFACE_DEFAULT ];
                         break;
                     }
                 }
@@ -232,32 +212,32 @@ int main( int argc, char* args[] )
             SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
             SDL_RenderClear( gRenderer );
 
-            // Add image
-            SDL_RenderCopy( gRenderer, gTexture, NULL, NULL );
+            // Top Left Viewport
+            SDL_Rect topLeftViewport;
+            topLeftViewport.x = 0;
+            topLeftViewport.y = 0;
+            topLeftViewport.w = SCREEN_WIDTH / 2;
+            topLeftViewport.h = SCREEN_HEIGHT / 2;
+            SDL_RenderSetViewport( gRenderer, &topLeftViewport );
+            SDL_RenderCopy( gRenderer, gKeyPressTexture[ KEY_PRESS_SURFACE_LEFT ], NULL, NULL );
 
-            // Draw red square
-            SDL_Rect fillRect = { SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
-            SDL_SetRenderDrawColor( gRenderer, 0xFF, 0x00, 0x00, 0xFF );
-            SDL_RenderFillRect( gRenderer, &fillRect );
+            // Top Right Viewport
+            SDL_Rect topRightViewport;
+            topRightViewport.x = SCREEN_WIDTH / 2;
+            topRightViewport.y = 0;
+            topRightViewport.w = SCREEN_WIDTH / 2;
+            topRightViewport.h = SCREEN_HEIGHT / 2;
+            SDL_RenderSetViewport( gRenderer, &topRightViewport );
+            SDL_RenderCopy( gRenderer, gKeyPressTexture[ KEY_PRESS_SURFACE_RIGHT ], NULL, NULL );
 
-            // Draw green square (filled)
-            SDL_Rect outlineRect = { SCREEN_WIDTH / 6, SCREEN_HEIGHT / 6, SCREEN_WIDTH * 2 / 3, SCREEN_HEIGHT * 2 / 3 };
-            SDL_SetRenderDrawColor( gRenderer, 0x00, 0xFF, 0x00, 0xFF );        
-            SDL_RenderDrawRect( gRenderer, &outlineRect );
-
-            // Draw blue horizontal line
-            SDL_SetRenderDrawColor( gRenderer, 0x00, 0x00, 0xFF, 0xFF );
-            SDL_RenderDrawLine( gRenderer, 0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2 );
-
-            // Draw yellow vertical line (dashed)
-            SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0x00, 0xFF );
-            for( int i = 0; i < SCREEN_HEIGHT; i++)
-            {
-                if(i % 8 < 4)
-                {
-                    SDL_RenderDrawPoint( gRenderer, SCREEN_WIDTH / 2, i);
-                }
-            }
+            // Bottom
+            SDL_Rect bottomViewport;
+            bottomViewport.x = 0;
+            bottomViewport.y = SCREEN_HEIGHT / 2;
+            bottomViewport.w = SCREEN_WIDTH;
+            bottomViewport.h = SCREEN_HEIGHT / 2;
+            SDL_RenderSetViewport( gRenderer, &bottomViewport );
+            SDL_RenderCopy( gRenderer, gKeyPressTexture[ KEY_PRESS_SURFACE_DOWN ], NULL, NULL );
 
             //Update screen
             SDL_RenderPresent( gRenderer );
