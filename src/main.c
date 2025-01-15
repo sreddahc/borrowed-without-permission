@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <string.h>
 
+// Global variables
 // Screen dimensions
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 960;
@@ -19,20 +20,30 @@ enum KeyPressSurfaces
     KEY_PRESS_SURFACE_TOTAL
 };
 
-// Functions
-bool init();
-bool loadMedia();
-void closeAll();
-SDL_Texture* loadTexture( char* path );
-
-// Global variables
 SDL_Window* gWindow = NULL;
 SDL_Renderer* gRenderer = NULL;
 SDL_Texture* gTexture = NULL;
 
+// Functions
+bool init();
+void closeAll();
+SDL_Texture* loadFromFile( char* path );
 
-SDL_Texture* loadTexture( char* path )
-{
+// LTexture "class"
+struct LTexture {
+    SDL_Texture* mTexture;
+    int mWidth;
+    int mHeight;
+};
+void LTexture_LoadImage( struct LTexture* self, char* path );
+void LTexture_Render( struct LTexture* self, int x, int y );
+int LTexture_GetWidth( struct LTexture* self );
+int LTexture_GetHeight( struct LTexture* self );
+void LTexture_Free( struct LTexture* self );
+
+
+void LTexture_LoadImage( struct LTexture* self, char* path ){
+    
     SDL_Texture* newTexture = NULL;
 
     SDL_Surface* loadedSurface = IMG_Load( path );
@@ -42,6 +53,12 @@ SDL_Texture* loadTexture( char* path )
     }
     else
     {
+        self->mWidth = loadedSurface->w;
+        self->mHeight = loadedSurface->h;
+
+        //Color key image
+        SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, 0xFF, 0x00, 0xFF ) );
+        
         newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
         if( newTexture == NULL )
         {
@@ -51,7 +68,34 @@ SDL_Texture* loadTexture( char* path )
         SDL_FreeSurface( loadedSurface );
     }
 
-    return newTexture;
+    self->mTexture = newTexture;
+}
+
+void LTexture_Render( struct LTexture* self, int x, int y )
+{
+    SDL_Rect renderZone = { x, y, self->mWidth, self->mHeight };
+    SDL_RenderCopy( gRenderer, self->mTexture, NULL, &renderZone );
+}
+
+int LTexture_GetWidth( struct LTexture* self )
+{
+    return self->mWidth;
+}
+
+int LTexture_GetHeight( struct LTexture* self )
+{
+    return self->mHeight;
+}
+
+void LTexture_Free( struct LTexture* self )
+{
+    if( self->mTexture != NULL )
+    {
+        SDL_DestroyTexture(self->mTexture);
+        self->mTexture = NULL;
+        self->mWidth = 0;
+        self->mHeight = 0;
+    }
 }
 
 bool init()
@@ -88,7 +132,7 @@ bool init()
             {
                 // Initialise renderer colour
                 SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
-                
+
                 // Initialise PNG loading
                 int imgFlags = IMG_INIT_PNG;
                 if( !( IMG_Init( imgFlags ) & imgFlags ) )
@@ -98,48 +142,6 @@ bool init()
                 }
             }
         }
-    }
-
-    return success;
-}
-
-bool loadMedia( SDL_Texture* *mediaTexture )
-{
-    bool success = true;
-    
-    mediaTexture[ KEY_PRESS_SURFACE_DEFAULT ] = loadTexture( "src/images/default.png" );
-    if( mediaTexture[ KEY_PRESS_SURFACE_DEFAULT ] == NULL )
-    {
-        printf( "Failed to load default image!\n" );
-        success = false;
-    }
-
-    mediaTexture[ KEY_PRESS_SURFACE_UP ] = loadTexture( "src/images/up.png" );
-    if( mediaTexture[ KEY_PRESS_SURFACE_UP ] == NULL )
-    {
-        printf( "Failed to load up image!\n" );
-        success = false;
-    }
-
-    mediaTexture[ KEY_PRESS_SURFACE_DOWN ] = loadTexture( "src/images/down.png" );
-    if( mediaTexture[ KEY_PRESS_SURFACE_DOWN ] == NULL )
-    {
-        printf( "Failed to load down image!\n" );
-        success = false;
-    }
-
-    mediaTexture[ KEY_PRESS_SURFACE_LEFT ] = loadTexture( "src/images/left.png" );
-    if( mediaTexture[ KEY_PRESS_SURFACE_LEFT ] == NULL )
-    {
-        printf( "Failed to load left image!\n" );
-        success = false;
-    }
-
-    mediaTexture[ KEY_PRESS_SURFACE_RIGHT ] = loadTexture( "src/images/right.png" );
-    if( mediaTexture[ KEY_PRESS_SURFACE_RIGHT ] == NULL )
-    {
-        printf( "Failed to load right image!\n" );
-        success = false;
     }
 
     return success;
@@ -176,15 +178,11 @@ int main( int argc, char* args[] )
         //Event handler
         SDL_Event e;
 
-        SDL_Surface* gStretchedSurface;
+        struct LTexture gBackground;
+        LTexture_LoadImage( &gBackground, "src/images/landscape.png" );
 
-        // Image of corresponding keypress
-        SDL_Texture* gKeyPressTexture[ KEY_PRESS_SURFACE_TOTAL ];
-        
-        if( !loadMedia( (SDL_Texture**) &gKeyPressTexture ) )
-        {
-            return 1;
-        }
+        struct LTexture gHuman;
+        LTexture_LoadImage( &gHuman, "src/images/human.png" );
 
         while( !quit )
         {
@@ -212,43 +210,15 @@ int main( int argc, char* args[] )
             SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
             SDL_RenderClear( gRenderer );
 
-            // Top Left Viewport
-            SDL_Rect topLeftViewport;
-            topLeftViewport.x = 0;
-            topLeftViewport.y = 0;
-            topLeftViewport.w = SCREEN_WIDTH / 2;
-            topLeftViewport.h = SCREEN_HEIGHT / 2;
-            SDL_RenderSetViewport( gRenderer, &topLeftViewport );
-            SDL_RenderCopy( gRenderer, gKeyPressTexture[ KEY_PRESS_SURFACE_LEFT ], NULL, NULL );
-
-            // Top Right Viewport
-            SDL_Rect topRightViewport;
-            topRightViewport.x = SCREEN_WIDTH / 2;
-            topRightViewport.y = 0;
-            topRightViewport.w = SCREEN_WIDTH / 2;
-            topRightViewport.h = SCREEN_HEIGHT / 2;
-            SDL_RenderSetViewport( gRenderer, &topRightViewport );
-            SDL_RenderCopy( gRenderer, gKeyPressTexture[ KEY_PRESS_SURFACE_RIGHT ], NULL, NULL );
-
-            // Bottom
-            SDL_Rect bottomViewport;
-            bottomViewport.x = 0;
-            bottomViewport.y = SCREEN_HEIGHT / 2;
-            bottomViewport.w = SCREEN_WIDTH;
-            bottomViewport.h = SCREEN_HEIGHT / 2;
-            SDL_RenderSetViewport( gRenderer, &bottomViewport );
-            SDL_RenderCopy( gRenderer, gKeyPressTexture[ KEY_PRESS_SURFACE_DOWN ], NULL, NULL );
+            LTexture_Render( &gBackground, 0, 0 );
+            LTexture_Render( &gHuman, 400, 200 );
 
             //Update screen
             SDL_RenderPresent( gRenderer );
         }
 
-        // Free texture resources
-        for( int textureId = 0; textureId < KEY_PRESS_SURFACE_TOTAL; textureId++  )
-        {
-            SDL_DestroyTexture( gKeyPressTexture[ textureId ] );
-            gKeyPressTexture[ textureId ] = NULL;
-        }
+        LTexture_Free( &gBackground );
+        LTexture_Free( &gHuman );
 
     }
 
