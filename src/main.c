@@ -53,18 +53,16 @@ void LTexture_LoadImage( struct LTexture* self, char* path ){
     }
     else
     {
+        self->mWidth = loadedSurface->w;
+        self->mHeight = loadedSurface->h;
+
+        //Color key image
+        SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, 0xFF, 0x00, 0xFF ) );
+        
         newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
         if( newTexture == NULL )
         {
             printf( "Unable to create texture from %s! SDL Error: %s\n", path, SDL_GetError() );
-        }
-        else
-        {
-            //Color key image
-            SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, 0xFF, 0x00, 0xFF ) );
-
-            self->mWidth = loadedSurface->w;
-            self->mHeight = loadedSurface->h;
         }
 
         SDL_FreeSurface( loadedSurface );
@@ -213,7 +211,6 @@ int main( int argc, char* args[] )
             SDL_RenderClear( gRenderer );
 
             LTexture_Render( &gBackground, 0, 0 );
-
             LTexture_Render( &gHuman, 400, 200 );
 
             //Update screen
