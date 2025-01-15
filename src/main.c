@@ -93,6 +93,7 @@ void LTexture_Free( struct LTexture* self )
 {
     if( self->mTexture != NULL )
     {
+        SDL_DestroyTexture(self->mTexture);
         self->mTexture = NULL;
         self->mWidth = 0;
         self->mHeight = 0;
