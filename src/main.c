@@ -36,7 +36,7 @@ struct LTexture {
     int mHeight;
 };
 void LTexture_LoadImage( struct LTexture* self, char* path );
-void LTexture_Render( struct LTexture* self, int x, int y );
+void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip );
 int LTexture_GetWidth( struct LTexture* self );
 int LTexture_GetHeight( struct LTexture* self );
 void LTexture_Free( struct LTexture* self );
@@ -71,10 +71,17 @@ void LTexture_LoadImage( struct LTexture* self, char* path ){
     self->mTexture = newTexture;
 }
 
-void LTexture_Render( struct LTexture* self, int x, int y )
+void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip )
 {
     SDL_Rect renderZone = { x, y, self->mWidth, self->mHeight };
-    SDL_RenderCopy( gRenderer, self->mTexture, NULL, &renderZone );
+    
+    if( clip != NULL )
+    {
+        renderZone.w = clip->w;
+        renderZone.h = clip->h;
+    }
+
+    SDL_RenderCopy( gRenderer, self->mTexture, clip, &renderZone );
 }
 
 int LTexture_GetWidth( struct LTexture* self )
@@ -184,6 +191,11 @@ int main( int argc, char* args[] )
         struct LTexture gHuman;
         LTexture_LoadImage( &gHuman, "src/images/human.png" );
 
+        struct LTexture gSprites;
+        LTexture_LoadImage( &gSprites, "src/images/circles.png" );
+
+        SDL_Rect gSpriteClips[ 4 ] = { {0, 0, 100, 100}, {100, 0, 100, 100}, {0, 100, 100, 100}, {100, 100, 100, 100} };
+
         while( !quit )
         {
             while( SDL_PollEvent( &e ) != 0 )
@@ -210,8 +222,12 @@ int main( int argc, char* args[] )
             SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
             SDL_RenderClear( gRenderer );
 
-            LTexture_Render( &gBackground, 0, 0 );
-            LTexture_Render( &gHuman, 400, 200 );
+            LTexture_Render( &gBackground, 0, 0, NULL );
+            LTexture_Render( &gHuman, 400, 200, NULL );
+            LTexture_Render( &gSprites, 0, 0, &gSpriteClips[ 0 ] );
+            LTexture_Render( &gSprites, SCREEN_WIDTH - gSpriteClips[ 1 ].w, 0, &gSpriteClips[ 1 ] );
+            LTexture_Render( &gSprites, 0, SCREEN_HEIGHT - gSpriteClips[ 2 ].h, &gSpriteClips[ 2 ] );
+            LTexture_Render( &gSprites, SCREEN_WIDTH - gSpriteClips[ 3 ].w, SCREEN_HEIGHT - gSpriteClips[ 2 ].h, &gSpriteClips[ 3 ] );
 
             //Update screen
             SDL_RenderPresent( gRenderer );
