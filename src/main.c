@@ -36,6 +36,7 @@ struct LTexture {
     int mHeight;
 };
 void LTexture_LoadImage( struct LTexture* self, char* path );
+void LTexture_SetColour( struct LTexture* self, Uint8 red, Uint8 green, Uint8 blue);
 void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip );
 int LTexture_GetWidth( struct LTexture* self );
 int LTexture_GetHeight( struct LTexture* self );
@@ -69,6 +70,11 @@ void LTexture_LoadImage( struct LTexture* self, char* path ){
     }
 
     self->mTexture = newTexture;
+}
+
+void LTexture_SetColour( struct LTexture* self, Uint8 red, Uint8 green, Uint8 blue)
+{
+    SDL_SetTextureColorMod( self->mTexture, red, green, blue );
 }
 
 void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip )
@@ -185,16 +191,13 @@ int main( int argc, char* args[] )
         //Event handler
         SDL_Event e;
 
+        // Colour mod variables
+        Uint8 r = 255;
+        Uint8 g = 255;
+        Uint8 b = 255;
+
         struct LTexture gBackground;
         LTexture_LoadImage( &gBackground, "src/images/landscape.png" );
-
-        struct LTexture gHuman;
-        LTexture_LoadImage( &gHuman, "src/images/human.png" );
-
-        struct LTexture gSprites;
-        LTexture_LoadImage( &gSprites, "src/images/circles.png" );
-
-        SDL_Rect gSpriteClips[ 4 ] = { {0, 0, 100, 100}, {100, 0, 100, 100}, {0, 100, 100, 100}, {100, 100, 100, 100} };
 
         while( !quit )
         {
@@ -211,6 +214,30 @@ int main( int argc, char* args[] )
                     case SDLK_ESCAPE:
                         quit = true;
                         break;
+                    
+                    case SDLK_q:
+                        r += 32;
+                        break;
+
+                    case SDLK_w:
+                        g += 32;
+                        break;
+
+                    case SDLK_e:
+                        b += 32;
+                        break;
+
+                    case SDLK_a:
+                        r -= 32;
+                        break;
+
+                    case SDLK_s:
+                        g -= 32;
+                        break;
+
+                    case SDLK_d:
+                        b -= 32;
+                        break;
 
                     default:
                         break;
@@ -222,19 +249,14 @@ int main( int argc, char* args[] )
             SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
             SDL_RenderClear( gRenderer );
 
+            LTexture_SetColour( &gBackground, r, g, b );
             LTexture_Render( &gBackground, 0, 0, NULL );
-            LTexture_Render( &gHuman, 400, 200, NULL );
-            LTexture_Render( &gSprites, 0, 0, &gSpriteClips[ 0 ] );
-            LTexture_Render( &gSprites, SCREEN_WIDTH - gSpriteClips[ 1 ].w, 0, &gSpriteClips[ 1 ] );
-            LTexture_Render( &gSprites, 0, SCREEN_HEIGHT - gSpriteClips[ 2 ].h, &gSpriteClips[ 2 ] );
-            LTexture_Render( &gSprites, SCREEN_WIDTH - gSpriteClips[ 3 ].w, SCREEN_HEIGHT - gSpriteClips[ 2 ].h, &gSpriteClips[ 3 ] );
 
             //Update screen
             SDL_RenderPresent( gRenderer );
         }
 
         LTexture_Free( &gBackground );
-        LTexture_Free( &gHuman );
 
     }
 
