@@ -27,6 +27,7 @@ struct LTexture {
 void LTexture_LoadImage( struct LTexture* self, char* path );
 void LTexture_SetColour( struct LTexture* self, Uint8 red, Uint8 green, Uint8 blue);
 void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip );
+void LTexture_SetAlpha( struct LTexture* self, Uint8 alpha );
 int LTexture_GetWidth( struct LTexture* self );
 int LTexture_GetHeight( struct LTexture* self );
 void LTexture_Free( struct LTexture* self );
@@ -77,6 +78,11 @@ void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip )
     }
 
     SDL_RenderCopy( gRenderer, self->mTexture, clip, &renderZone );
+}
+
+void LTexture_SetAlpha( struct LTexture* self, Uint8 alpha )
+{
+    SDL_SetTextureAlphaMod( self->mTexture, alpha )
 }
 
 int LTexture_GetWidth( struct LTexture* self )
