@@ -7,7 +7,7 @@
 // Global variables
 // Screen dimensions
 const int SCREEN_WIDTH = 1280;
-const int SCREEN_HEIGHT = 960;
+const int SCREEN_HEIGHT = 768;
 
 // Key press surface constants
 enum KeyPressSurfaces
@@ -41,6 +41,7 @@ void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip );
 int LTexture_GetWidth( struct LTexture* self );
 int LTexture_GetHeight( struct LTexture* self );
 void LTexture_Free( struct LTexture* self );
+void LTexture_SetBlendMode( struct LTexture* self, SDL_BlendMode blending );
 
 
 void LTexture_LoadImage( struct LTexture* self, char* path ){
@@ -109,6 +110,11 @@ void LTexture_Free( struct LTexture* self )
         self->mWidth = 0;
         self->mHeight = 0;
     }
+}
+
+void LTexture_SetBlendMode( struct LTexture* self, SDL_BlendMode blending )
+{
+    
 }
 
 bool init()
@@ -197,10 +203,10 @@ int main( int argc, char* args[] )
         Uint8 b = 255;
 
         struct LTexture gBackground;
-        LTexture_LoadImage( &gBackground, "src/images/landscape.png" );
+        LTexture_LoadImage( &gBackground, "src/images/day.png" );
 
         while( !quit )
-        {
+    {
             while( SDL_PollEvent( &e ) != 0 )
             {
                 if( e.type == SDL_QUIT )
