@@ -27,7 +27,6 @@ SDL_Texture* gTexture = NULL;
 // Functions
 bool init();
 void closeAll();
-SDL_Texture* loadFromFile( char* path );
 
 // LTexture "class"
 struct LTexture {
@@ -35,47 +34,63 @@ struct LTexture {
     int mWidth;
     int mHeight;
 };
-void LTexture_LoadImage( struct LTexture* self, char* path );
+int LTexture_LoadImage( struct LTexture* self, char* path );
+void LTexture_SetBlendMode( struct LTexture* self, SDL_BlendMode blending );
 void LTexture_SetColour( struct LTexture* self, Uint8 red, Uint8 green, Uint8 blue);
+void LTexture_SetAlpha( struct LTexture* self, Uint8 alpha );
 void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip );
 int LTexture_GetWidth( struct LTexture* self );
 int LTexture_GetHeight( struct LTexture* self );
 void LTexture_Free( struct LTexture* self );
-void LTexture_SetBlendMode( struct LTexture* self, SDL_BlendMode blending );
 
 
-void LTexture_LoadImage( struct LTexture* self, char* path ){
+int LTexture_LoadImage( struct LTexture* self, char* path ){
     
+    bool success = true;
     SDL_Texture* newTexture = NULL;
 
     SDL_Surface* loadedSurface = IMG_Load( path );
     if( loadedSurface == NULL )
     {
         printf( "Unable to load image %s! SDL_image Error: %s\n", path, IMG_GetError() );
+        success = false;
     }
     else
     {
         self->mWidth = loadedSurface->w;
         self->mHeight = loadedSurface->h;
 
-        //Color key image
+        // Color key image
         SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, 0xFF, 0x00, 0xFF ) );
         
         newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
         if( newTexture == NULL )
         {
             printf( "Unable to create texture from %s! SDL Error: %s\n", path, SDL_GetError() );
+            success = false;
         }
 
         SDL_FreeSurface( loadedSurface );
     }
 
     self->mTexture = newTexture;
+
+    return success;
+}
+
+void LTexture_SetBlendMode( struct LTexture* self, SDL_BlendMode blending )
+{
+    SDL_SetTextureBlendMode( self->mTexture, blending );
 }
 
 void LTexture_SetColour( struct LTexture* self, Uint8 red, Uint8 green, Uint8 blue)
 {
     SDL_SetTextureColorMod( self->mTexture, red, green, blue );
+}
+
+void LTexture_SetAlpha( struct LTexture* self, Uint8 alpha )
+{
+    SDL_SetTextureAlphaMod( self->mTexture, alpha );
 }
 
 void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip )
@@ -112,11 +127,6 @@ void LTexture_Free( struct LTexture* self )
     }
 }
 
-void LTexture_SetBlendMode( struct LTexture* self, SDL_BlendMode blending )
-{
-    
-}
-
 bool init()
 {
 
@@ -140,16 +150,16 @@ bool init()
         }
         else
         {
-            //Create renderer for window
+            // Create renderer for window
             gRenderer = SDL_CreateRenderer( gWindow, -1, SDL_RENDERER_ACCELERATED );
-            if( gRenderer == NULL)
+            if( gRenderer == NULL )
             {
                 printf( "Renderer could not be created! SDL Error: %s\n", SDL_GetError() );
                 success = false;
             }
             else
             {
-                // Initialise renderer colour
+                // Initialise Renderer Colour
                 SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 
                 // Initialise PNG loading
@@ -168,7 +178,7 @@ bool init()
 
 void closeAll()
 {
-    //Free Loaded Images
+    // Free Loaded Images
     SDL_DestroyTexture( gTexture );
     gTexture = NULL;
     
@@ -178,7 +188,7 @@ void closeAll()
     gWindow = NULL;
     gRenderer = NULL;
 
-    //Quit SDL subsystems
+    // Quit SDL subsystems
     IMG_Quit();
     SDL_Quit();
 }
@@ -191,19 +201,21 @@ int main( int argc, char* args[] )
     }
     else
     {
-        //Main loop flag
+        // Main loop flag
         bool quit = false;
 
-        //Event handler
+        // Event handler
         SDL_Event e;
 
-        // Colour mod variables
-        Uint8 r = 255;
-        Uint8 g = 255;
-        Uint8 b = 255;
+        // Alpha channel
+        Uint8 a = 255;
+        Uint8 increment = 32;
 
         struct LTexture gBackground;
-        LTexture_LoadImage( &gBackground, "src/images/day.png" );
+        struct LTexture gForeground;
+        LTexture_LoadImage( &gBackground, "src/images/night.png" );
+        LTexture_LoadImage( &gForeground, "src/images/day.png" );
+        LTexture_SetBlendMode( &gForeground, SDL_BLENDMODE_BLEND );
 
         while( !quit )
     {
@@ -221,28 +233,26 @@ int main( int argc, char* args[] )
                         quit = true;
                         break;
                     
-                    case SDLK_q:
-                        r += 32;
+                    // Fade to day
+                    case SDLK_UP:
+                        if( a + increment >= 255 ){
+                            a = 255;
+                        }
+                        else
+                        {
+                            a += increment;
+                        }
                         break;
 
-                    case SDLK_w:
-                        g += 32;
-                        break;
-
-                    case SDLK_e:
-                        b += 32;
-                        break;
-
-                    case SDLK_a:
-                        r -= 32;
-                        break;
-
-                    case SDLK_s:
-                        g -= 32;
-                        break;
-
-                    case SDLK_d:
-                        b -= 32;
+                    // Fade to night
+                    case SDLK_DOWN:
+                        if( a - increment <= 0 ){
+                            a = 0;
+                        }
+                        else
+                        {
+                            a -= increment;
+                        }
                         break;
 
                     default:
@@ -252,16 +262,17 @@ int main( int argc, char* args[] )
             }
 
             // Update the surface
-            SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
             SDL_RenderClear( gRenderer );
 
-            LTexture_SetColour( &gBackground, r, g, b );
             LTexture_Render( &gBackground, 0, 0, NULL );
+            LTexture_Render( &gForeground, 0, 0, NULL );
+            LTexture_SetAlpha( &gForeground, a );
 
-            //Update screen
+            // Update screen
             SDL_RenderPresent( gRenderer );
         }
 
+        LTexture_Free( &gForeground );
         LTexture_Free( &gBackground );
 
     }
