@@ -38,7 +38,7 @@ int LTexture_LoadImage( struct LTexture* self, char* path );
 void LTexture_SetBlendMode( struct LTexture* self, SDL_BlendMode blending );
 void LTexture_SetColour( struct LTexture* self, Uint8 red, Uint8 green, Uint8 blue);
 void LTexture_SetAlpha( struct LTexture* self, Uint8 alpha );
-void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip );
+void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip, double angle, SDL_Point* centre, SDL_RendererFlip flip );
 int LTexture_GetWidth( struct LTexture* self );
 int LTexture_GetHeight( struct LTexture* self );
 void LTexture_Free( struct LTexture* self );
@@ -97,17 +97,20 @@ void LTexture_SetAlpha( struct LTexture* self, Uint8 alpha )
 }
 
 
-void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip )
+void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip, double angle, SDL_Point* centre, SDL_RendererFlip flip )
 {
+    // Set rendering space and render to screen
     SDL_Rect renderZone = { x, y, self->mWidth, self->mHeight };
     
+    // Set clip dimensions
     if( clip != NULL )
     {
         renderZone.w = clip->w;
         renderZone.h = clip->h;
     }
 
-    SDL_RenderCopy( gRenderer, self->mTexture, clip, &renderZone );
+    // Render to screen
+    SDL_RenderCopyEx( gRenderer, self->mTexture, clip, &renderZone, angle, centre, flip );
 }
 
 
@@ -244,6 +247,9 @@ int main( int argc, char* args[] )
         }
 
         int frame = 0;
+        SDL_RendererFlip flipType = SDL_FLIP_NONE;
+        double degrees = 0;
+        double angle_increment = 30;
 
         while( !quit )
         {
@@ -261,12 +267,42 @@ int main( int argc, char* args[] )
                         quit = true;
                         break;
                     
-                    // Fade to day
-                    case SDLK_UP:
+                    // No flip
+                    case SDLK_s:
+                        flipType = SDL_FLIP_NONE;
                         break;
 
-                    // Fade to night
+                    // Flip horizontally
+                    case SDLK_a:
+                        flipType = SDL_FLIP_HORIZONTAL;
+                        break;
+                    
+                    // Flip vertically
+                    case SDLK_w:
+                        flipType = SDL_FLIP_VERTICAL;
+                        break;
+
+                    // Rotate clockwise
+                    case SDLK_RIGHT:
+                        degrees += angle_increment;
+                        if( degrees >= 360 )
+                        {
+                            degrees -= 360;
+                        }
+                        break;
+                    
+                    // Rotate anti-clockwise
+                    case SDLK_LEFT:
+                        degrees -= angle_increment;
+                        if( degrees < 0 )
+                        {
+                            degrees += 360;
+                        }
+                        break;
+                    
+                    // Reset angle
                     case SDLK_DOWN:
+                        degrees = 0;
                         break;
 
                     default:
@@ -279,11 +315,11 @@ int main( int argc, char* args[] )
             SDL_RenderClear( gRenderer );
             
             // Render Background
-            LTexture_Render( &gBackground, 0, 0, NULL );
+            LTexture_Render( &gBackground, 0, 0, NULL, 0.0, NULL, SDL_FLIP_NONE );
 
             // Render Sprite
             SDL_Rect* gSpriteFrame = &gSprite[ frame ];
-            LTexture_Render( &gSpriteSheet, 235, 235, gSpriteFrame );
+            LTexture_Render( &gSpriteSheet, 235, 235, gSpriteFrame, degrees, NULL, flipType );
             frame = ( frame + 1 ) % WALKING_ANIMATION_FRAMES;
 
             // Update screen
