@@ -78,20 +78,24 @@ int LTexture_LoadImage( struct LTexture* self, char* path ){
     return success;
 }
 
+
 void LTexture_SetBlendMode( struct LTexture* self, SDL_BlendMode blending )
 {
     SDL_SetTextureBlendMode( self->mTexture, blending );
 }
+
 
 void LTexture_SetColour( struct LTexture* self, Uint8 red, Uint8 green, Uint8 blue)
 {
     SDL_SetTextureColorMod( self->mTexture, red, green, blue );
 }
 
+
 void LTexture_SetAlpha( struct LTexture* self, Uint8 alpha )
 {
     SDL_SetTextureAlphaMod( self->mTexture, alpha );
 }
+
 
 void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip )
 {
@@ -99,6 +103,8 @@ void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip )
     
     if( clip != NULL )
     {
+        renderZone.x = clip->x;
+        renderZone.y = clip->y;
         renderZone.w = clip->w;
         renderZone.h = clip->h;
     }
@@ -106,15 +112,18 @@ void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip )
     SDL_RenderCopy( gRenderer, self->mTexture, clip, &renderZone );
 }
 
+
 int LTexture_GetWidth( struct LTexture* self )
 {
     return self->mWidth;
 }
 
+
 int LTexture_GetHeight( struct LTexture* self )
 {
     return self->mHeight;
 }
+
 
 void LTexture_Free( struct LTexture* self )
 {
@@ -127,9 +136,9 @@ void LTexture_Free( struct LTexture* self )
     }
 }
 
+
 bool init()
 {
-
     // Initialisation flag
     bool success = true;
 
@@ -142,7 +151,7 @@ bool init()
     else
     {
         // Create window
-        gWindow = SDL_CreateWindow( "Pong", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+        gWindow = SDL_CreateWindow( "Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
         if( gWindow == NULL )
         {
             printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
@@ -151,7 +160,7 @@ bool init()
         else
         {
             // Create renderer for window
-            gRenderer = SDL_CreateRenderer( gWindow, -1, SDL_RENDERER_ACCELERATED );
+            gRenderer = SDL_CreateRenderer( gWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
             if( gRenderer == NULL )
             {
                 printf( "Renderer could not be created! SDL Error: %s\n", SDL_GetError() );
@@ -176,6 +185,7 @@ bool init()
     return success;
 }
 
+
 void closeAll()
 {
     // Free Loaded Images
@@ -193,6 +203,7 @@ void closeAll()
     SDL_Quit();
 }
 
+
 int main( int argc, char* args[] )
 {
     // Start up SDL and create window
@@ -207,18 +218,37 @@ int main( int argc, char* args[] )
         // Event handler
         SDL_Event e;
 
-        // Alpha channel
-        Uint8 a = 255;
-        Uint8 increment = 32;
-
         struct LTexture gBackground;
-        struct LTexture gForeground;
-        LTexture_LoadImage( &gBackground, "src/images/night.png" );
-        LTexture_LoadImage( &gForeground, "src/images/day.png" );
-        LTexture_SetBlendMode( &gForeground, SDL_BLENDMODE_BLEND );
+        LTexture_LoadImage( &gBackground, "src/images/backgrounds/day.png" );
+
+        // Sprite
+        const int WALKING_ANIMATION_FRAMES = 4;
+        const int SPRITE_HEIGHT = 32;
+        const int SPRITE_WIDTH = 32;
+        SDL_Rect gSprite[ WALKING_ANIMATION_FRAMES ];
+        
+        struct LTexture gSpriteSheet;
+        if( !( LTexture_LoadImage( &gSpriteSheet, "src/images/sprites/player.png" ) ) )
+        {
+            printf( "Failed to load walking animation texture.\n" );
+        }
+        else
+        {
+            // Set sprite animation frames
+            // An assumption is being made that the frames go from left to right only.
+            for( int f = 0; f < WALKING_ANIMATION_FRAMES; f++ )
+            {
+                gSprite[ f ].x = f * SPRITE_WIDTH;
+                gSprite[ f ].y = 0;
+                gSprite[ f ].w = SPRITE_WIDTH;
+                gSprite[ f ].h = SPRITE_HEIGHT;
+            }
+        }
+
+        int frame = 0;
 
         while( !quit )
-    {
+        {
             while( SDL_PollEvent( &e ) != 0 )
             {
                 if( e.type == SDL_QUIT )
@@ -235,24 +265,10 @@ int main( int argc, char* args[] )
                     
                     // Fade to day
                     case SDLK_UP:
-                        if( a + increment >= 255 ){
-                            a = 255;
-                        }
-                        else
-                        {
-                            a += increment;
-                        }
                         break;
 
                     // Fade to night
                     case SDLK_DOWN:
-                        if( a - increment <= 0 ){
-                            a = 0;
-                        }
-                        else
-                        {
-                            a -= increment;
-                        }
                         break;
 
                     default:
@@ -263,16 +279,20 @@ int main( int argc, char* args[] )
 
             // Update the surface
             SDL_RenderClear( gRenderer );
-
+            
+            // Render Background
             LTexture_Render( &gBackground, 0, 0, NULL );
-            LTexture_Render( &gForeground, 0, 0, NULL );
-            LTexture_SetAlpha( &gForeground, a );
+
+            // Render Sprite
+            SDL_Rect* gSpriteFrame = &gSprite[ frame ];
+            LTexture_Render( &gSpriteSheet, 200  , 200 , gSpriteFrame );
+            // frame = ( frame + 1 ) % WALKING_ANIMATION_FRAMES;
 
             // Update screen
             SDL_RenderPresent( gRenderer );
         }
 
-        LTexture_Free( &gForeground );
+        LTexture_Free( &gSpriteSheet );
         LTexture_Free( &gBackground );
 
     }
