@@ -103,8 +103,6 @@ void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip )
     
     if( clip != NULL )
     {
-        renderZone.x = clip->x;
-        renderZone.y = clip->y;
         renderZone.w = clip->w;
         renderZone.h = clip->h;
     }
@@ -285,8 +283,8 @@ int main( int argc, char* args[] )
 
             // Render Sprite
             SDL_Rect* gSpriteFrame = &gSprite[ frame ];
-            LTexture_Render( &gSpriteSheet, 200  , 200 , gSpriteFrame );
-            // frame = ( frame + 1 ) % WALKING_ANIMATION_FRAMES;
+            LTexture_Render( &gSpriteSheet, 235, 235, gSpriteFrame );
+            frame = ( frame + 1 ) % WALKING_ANIMATION_FRAMES;
 
             // Update screen
             SDL_RenderPresent( gRenderer );
