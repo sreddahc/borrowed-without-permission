@@ -25,7 +25,13 @@ enum KeyPressSurfaces
 SDL_Window* gWindow = NULL;
 SDL_Renderer* gRenderer = NULL;
 SDL_Texture* gTexture = NULL;
-TTF_Font* gFont = NULL;
+TTF_Font* gFontTitle = NULL;
+TTF_Font* gFontNormal = NULL;
+
+typedef struct MousePosition {
+    int x;
+    int y;
+} MousePosition;
 
 // Functions
 bool init();
@@ -126,19 +132,38 @@ int main( int argc, char* args[] )
         LTexture_LoadImage( &gBackground, gRenderer, "src/images/backgrounds/day.png" );
 
         // Text
-        gFont = TTF_OpenFont( "src/assets/fonts/dejavu/DejaVuSerif.ttf", 28 );
-        if( gFont == NULL )
+        gFontTitle = TTF_OpenFont( "src/assets/fonts/dejavu/DejaVuSerif.ttf", 28 );
+        if( gFontTitle == NULL )
         {
             printf( "Failed to load font! SDL_ttf Error: %s\n", TTF_GetError() );
             quit = true;
         }
-        SDL_Color textColour = { 0, 0, 0 };
-        struct LTexture gText;
-        if( !( LTexture_LoadText( &gText, gRenderer, "New game!", gFont, textColour ) ) )
+        SDL_Color textTitleColour = { 0, 0, 0 };
+        struct LTexture gTitleText;
+        if( !( LTexture_LoadText( &gTitleText, gRenderer, "New game!", gFontTitle, textTitleColour ) ) )
         {
             printf( "Failed to render texture!\n" );
             quit = true;
         }
+
+        // This is now repeatable code and should probably be packaged away in its own special little class - to do
+        gFontNormal = TTF_OpenFont( "src/assets/fonts/dejavu/DejaVuSerif.ttf", 16 );
+        SDL_Color textNormalColour = { 0, 0, 0 };
+        if( gFontNormal == NULL )
+        {
+            printf( "Failed to load font! SDL_ttf Error: %s\n", TTF_GetError() );
+            quit = true;
+        }
+        struct LTexture gMouseText;
+        if( !( LTexture_LoadText( &gMouseText, gRenderer, "Temporary Text", gFontNormal, textNormalColour ) ) )
+        {
+            printf( "Failed to render texture!\n" );
+            quit = true;
+        }
+
+        // Mouse
+        MousePosition mousePosition = { 0, 0 };
+        char mousePositionText[50];
 
         // Sprite
         const int WALKING_ANIMATION_FRAMES = 4;
@@ -173,10 +198,12 @@ int main( int argc, char* args[] )
         {
             while( SDL_PollEvent( &e ) != 0 )
             {
+                // Window Event
                 if( e.type == SDL_QUIT )
                 {
                     quit = true;
                 }
+                // Keyboard Event
                 else if( e.type == SDL_KEYDOWN )
                 {
                     switch( e.key.keysym.sym )
@@ -227,6 +254,25 @@ int main( int argc, char* args[] )
                         break;
                     }
                 }
+                // Mouse Event
+                else if( e.type == SDL_MOUSEMOTION || e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP )
+                {
+                    SDL_GetMouseState( &mousePosition.x, &mousePosition.y );
+                    
+                    snprintf(mousePositionText, 50, "Mouse Position: X=%d, Y=%d", mousePosition.x, mousePosition.y);
+
+                    if( e.type == SDL_MOUSEBUTTONDOWN )
+                    {
+                        strcat(mousePositionText, " - KEYDOWN");
+                    }
+
+                    if( !( LTexture_LoadText( &gMouseText, gRenderer, mousePositionText, gFontNormal, textNormalColour ) ) )
+                    {
+                        printf( "Failed to render texture!\n" );
+                        quit = true;
+                    }
+
+                }
             }
 
             // Update the surface
@@ -235,8 +281,11 @@ int main( int argc, char* args[] )
             // Render Background
             LTexture_Render( &gBackground, gRenderer, 0, 0, NULL, 0.0, NULL, SDL_FLIP_NONE );
 
-            // Render Text
-            LTexture_Render( &gText, gRenderer, 0, 0, NULL, 0.0, NULL, SDL_FLIP_NONE );
+            // Render Title Text
+            LTexture_Render( &gTitleText, gRenderer, ((SCREEN_WIDTH - gTitleText.mWidth) / 2), 10, NULL, 0.0, NULL, SDL_FLIP_NONE );
+
+            // Render Mouse Text
+            LTexture_Render( &gMouseText, gRenderer, ((SCREEN_WIDTH - gMouseText.mWidth) / 2), 50, NULL, 0.0, NULL, SDL_FLIP_NONE );
 
             // Render Sprite
             SDL_Rect* gSpriteFrame = &gSprite[ frame ];
@@ -247,7 +296,7 @@ int main( int argc, char* args[] )
             SDL_RenderPresent( gRenderer );
         }
 
-        LTexture_Free( &gText );
+        // LTexture_Free( &gText );
         LTexture_Free( &gSpriteSheet );
         LTexture_Free( &gBackground );
 
