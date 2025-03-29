@@ -1,12 +1,13 @@
 #pragma once
 
-// LTexture "class"
+// Type definitions
 typedef struct LTexture {
     SDL_Texture* mTexture;
     int mWidth;
     int mHeight;
 } LTexture;
 
+// Function definitions
 bool LTexture_LoadImage( LTexture* self, SDL_Renderer* renderer, char* path );
 bool LTexture_LoadText( LTexture* self, SDL_Renderer* renderer, char* textValue, TTF_Font* font, SDL_Color textColour );
 void LTexture_SetBlendMode( LTexture* self, SDL_BlendMode blending );

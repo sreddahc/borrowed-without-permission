@@ -41,6 +41,7 @@ bool LTexture_LoadImage( struct LTexture* self, SDL_Renderer* renderer, char* pa
 }
 
 
+#if defined(SDL_TTF_MAJOR_VERSION)
 bool LTexture_LoadText( struct LTexture* self, SDL_Renderer* renderer, char* textValue, TTF_Font* font, SDL_Color textColour )
 {
     bool success = true;
@@ -72,6 +73,7 @@ bool LTexture_LoadText( struct LTexture* self, SDL_Renderer* renderer, char* tex
     
     return success;
 }
+#endif
 
 
 void LTexture_SetBlendMode( struct LTexture* self, SDL_BlendMode blending )
