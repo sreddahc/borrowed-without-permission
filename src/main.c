@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include "renderer/renderer.h"
 
 // Global variables
 // Screen dimensions
@@ -29,148 +30,6 @@ TTF_Font* gFont = NULL;
 // Functions
 bool init();
 void closeAll();
-
-// LTexture "class"
-struct LTexture {
-    SDL_Texture* mTexture;
-    int mWidth;
-    int mHeight;
-};
-bool LTexture_LoadImage( struct LTexture* self, char* path );
-bool LTexture_LoadText( struct LTexture* self, char* textValue, SDL_Color textColour );
-void LTexture_SetBlendMode( struct LTexture* self, SDL_BlendMode blending );
-void LTexture_SetColour( struct LTexture* self, Uint8 red, Uint8 green, Uint8 blue);
-void LTexture_SetAlpha( struct LTexture* self, Uint8 alpha );
-void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip, double angle, SDL_Point* centre, SDL_RendererFlip flip );
-int LTexture_GetWidth( struct LTexture* self );
-int LTexture_GetHeight( struct LTexture* self );
-void LTexture_Free( struct LTexture* self );
-
-bool LTexture_LoadImage( struct LTexture* self, char* path ){
-    
-    bool success = true;
-    SDL_Texture* newTexture = NULL;
-
-    SDL_Surface* loadedSurface = IMG_Load( path );
-    if( loadedSurface == NULL )
-    {
-        printf( "Unable to load image %s! SDL_image Error: %s\n", path, IMG_GetError() );
-        success = false;
-    }
-    else
-    {
-        self->mWidth = loadedSurface->w;
-        self->mHeight = loadedSurface->h;
-
-        // Color key image
-        SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, 0xFF, 0x00, 0xFF ) );
-        
-        newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
-        if( newTexture == NULL )
-        {
-            printf( "Unable to create texture from %s! SDL Error: %s\n", path, SDL_GetError() );
-            success = false;
-        }
-
-        SDL_FreeSurface( loadedSurface );
-    }
-
-    self->mTexture = newTexture;
-
-    return success;
-}
-
-
-bool LTexture_LoadText( struct LTexture* self, char* textValue, SDL_Color textColour )
-{
-    bool success = true;
-
-    SDL_Surface* textSurface = TTF_RenderText_Solid( gFont, textValue, textColour );
-    if( textSurface == NULL )
-    {
-        printf( "Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError() );
-        success = false;
-    }
-    else
-    {
-        // Create texture from surface pixels
-        self->mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
-        if( self->mTexture == NULL )
-        {
-            printf( "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError() );
-            success = false;
-        }
-        else
-        {
-            // Get image dimensions
-            self->mWidth = textSurface->w;
-            self->mHeight = textSurface->h;
-        }
-        // Clean up old surface
-        SDL_FreeSurface( textSurface );
-    }
-    
-    return success;
-}
-
-
-void LTexture_SetBlendMode( struct LTexture* self, SDL_BlendMode blending )
-{
-    SDL_SetTextureBlendMode( self->mTexture, blending );
-}
-
-
-void LTexture_SetColour( struct LTexture* self, Uint8 red, Uint8 green, Uint8 blue)
-{
-    SDL_SetTextureColorMod( self->mTexture, red, green, blue );
-}
-
-
-void LTexture_SetAlpha( struct LTexture* self, Uint8 alpha )
-{
-    SDL_SetTextureAlphaMod( self->mTexture, alpha );
-}
-
-
-void LTexture_Render( struct LTexture* self, int x, int y, SDL_Rect* clip, double angle, SDL_Point* centre, SDL_RendererFlip flip )
-{
-    // Set rendering space and render to screen
-    SDL_Rect renderZone = { x, y, self->mWidth, self->mHeight };
-    
-    // Set clip dimensions
-    if( clip != NULL )
-    {
-        renderZone.w = clip->w;
-        renderZone.h = clip->h;
-    }
-
-    // Render to screen
-    SDL_RenderCopyEx( gRenderer, self->mTexture, clip, &renderZone, angle, centre, flip );
-}
-
-
-int LTexture_GetWidth( struct LTexture* self )
-{
-    return self->mWidth;
-}
-
-
-int LTexture_GetHeight( struct LTexture* self )
-{
-    return self->mHeight;
-}
-
-
-void LTexture_Free( struct LTexture* self )
-{
-    if( self->mTexture != NULL )
-    {
-        SDL_DestroyTexture(self->mTexture);
-        self->mTexture = NULL;
-        self->mWidth = 0;
-        self->mHeight = 0;
-    }
-}
 
 
 bool init()
@@ -264,7 +123,7 @@ int main( int argc, char* args[] )
 
         // Background
         struct LTexture gBackground;
-        LTexture_LoadImage( &gBackground, "src/images/backgrounds/day.png" );
+        LTexture_LoadImage( &gBackground, gRenderer, "src/images/backgrounds/day.png" );
 
         // Text
         gFont = TTF_OpenFont( "src/assets/fonts/dejavu/DejaVuSerif.ttf", 28 );
@@ -275,7 +134,7 @@ int main( int argc, char* args[] )
         }
         SDL_Color textColour = { 0, 0, 0 };
         struct LTexture gText;
-        if( !( LTexture_LoadText( &gText, "New game!", textColour ) ) )
+        if( !( LTexture_LoadText( &gText, gRenderer, "New game!", gFont, textColour ) ) )
         {
             printf( "Failed to render texture!\n" );
             quit = true;
@@ -293,7 +152,7 @@ int main( int argc, char* args[] )
         double angle_increment = 30;
 
         struct LTexture gSpriteSheet;
-        if( !( LTexture_LoadImage( &gSpriteSheet, "src/images/sprites/player.png" ) ) )
+        if( !( LTexture_LoadImage( &gSpriteSheet, gRenderer, "src/images/sprites/player.png" ) ) )
         {
             printf( "Failed to load walking animation texture.\n" );
         }
@@ -374,14 +233,14 @@ int main( int argc, char* args[] )
             SDL_RenderClear( gRenderer );
             
             // Render Background
-            LTexture_Render( &gBackground, 0, 0, NULL, 0.0, NULL, SDL_FLIP_NONE );
+            LTexture_Render( &gBackground, gRenderer, 0, 0, NULL, 0.0, NULL, SDL_FLIP_NONE );
 
             // Render Text
-            LTexture_Render( &gText, 0, 0, NULL, 0.0, NULL, SDL_FLIP_NONE );
+            LTexture_Render( &gText, gRenderer, 0, 0, NULL, 0.0, NULL, SDL_FLIP_NONE );
 
             // Render Sprite
             SDL_Rect* gSpriteFrame = &gSprite[ frame ];
-            LTexture_Render( &gSpriteSheet, 235, 235, gSpriteFrame, degrees, NULL, flipType );
+            LTexture_Render( &gSpriteSheet, gRenderer, 235, 235, gSpriteFrame, degrees, NULL, flipType );
             frame = ( frame + 1 ) % WALKING_ANIMATION_FRAMES;
 
             // Update screen

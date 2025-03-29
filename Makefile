@@ -1,4 +1,4 @@
-OBJS = src/main.c
+OBJS = src/main.c src/renderer/renderer.c
 CC = gcc
 COMPILER_FLAGS = -w
 LINKER_FLAGS = -lSDL2 -lSDL2_image -lSDL2_ttf
