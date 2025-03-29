@@ -24,6 +24,7 @@ enum KeyPressSurfaces
 SDL_Window* gWindow = NULL;
 SDL_Renderer* gRenderer = NULL;
 SDL_Texture* gTexture = NULL;
+TTF_Font* gFont = NULL;
 
 // Functions
 bool init();
@@ -35,7 +36,8 @@ struct LTexture {
     int mWidth;
     int mHeight;
 };
-int LTexture_LoadImage( struct LTexture* self, char* path );
+bool LTexture_LoadImage( struct LTexture* self, char* path );
+bool LTexture_LoadText( struct LTexture* self, char* textValue, SDL_Color textColour );
 void LTexture_SetBlendMode( struct LTexture* self, SDL_BlendMode blending );
 void LTexture_SetColour( struct LTexture* self, Uint8 red, Uint8 green, Uint8 blue);
 void LTexture_SetAlpha( struct LTexture* self, Uint8 alpha );
@@ -44,8 +46,7 @@ int LTexture_GetWidth( struct LTexture* self );
 int LTexture_GetHeight( struct LTexture* self );
 void LTexture_Free( struct LTexture* self );
 
-
-int LTexture_LoadImage( struct LTexture* self, char* path ){
+bool LTexture_LoadImage( struct LTexture* self, char* path ){
     
     bool success = true;
     SDL_Texture* newTexture = NULL;
@@ -76,6 +77,39 @@ int LTexture_LoadImage( struct LTexture* self, char* path ){
 
     self->mTexture = newTexture;
 
+    return success;
+}
+
+
+bool LTexture_LoadText( struct LTexture* self, char* textValue, SDL_Color textColour )
+{
+    bool success = true;
+
+    SDL_Surface* textSurface = TTF_RenderText_Solid( gFont, textValue, textColour );
+    if( textSurface == NULL )
+    {
+        printf( "Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError() );
+        success = false;
+    }
+    else
+    {
+        // Create texture from surface pixels
+        self->mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
+        if( self->mTexture == NULL )
+        {
+            printf( "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError() );
+            success = false;
+        }
+        else
+        {
+            // Get image dimensions
+            self->mWidth = textSurface->w;
+            self->mHeight = textSurface->h;
+        }
+        // Clean up old surface
+        SDL_FreeSurface( textSurface );
+    }
+    
     return success;
 }
 
@@ -180,6 +214,13 @@ bool init()
                     printf( "SDL_image could not initialise! SDL_image Error: %s\n", IMG_GetError() );
                     success = false;
                 }
+
+                // Initialise TTF loading
+                if( TTF_Init() == -1 )
+                {
+                    printf( "SDL_ttf could not initialise! SDL_ttf Error: %s\n", TTF_GetError() );
+                    success = false;
+                }
             }
         }
     }
@@ -201,6 +242,7 @@ void closeAll()
     gRenderer = NULL;
 
     // Quit SDL subsystems
+    TTF_Quit();
     IMG_Quit();
     SDL_Quit();
 }
@@ -220,15 +262,36 @@ int main( int argc, char* args[] )
         // Event handler
         SDL_Event e;
 
+        // Background
         struct LTexture gBackground;
         LTexture_LoadImage( &gBackground, "src/images/backgrounds/day.png" );
+
+        // Text
+        gFont = TTF_OpenFont( "src/assets/fonts/dejavu/DejaVuSerif.ttf", 28 );
+        if( gFont == NULL )
+        {
+            printf( "Failed to load font! SDL_ttf Error: %s\n", TTF_GetError() );
+            quit = true;
+        }
+        SDL_Color textColour = { 0, 0, 0 };
+        struct LTexture gText;
+        if( !( LTexture_LoadText( &gText, "New game!", textColour ) ) )
+        {
+            printf( "Failed to render texture!\n" );
+            quit = true;
+        }
 
         // Sprite
         const int WALKING_ANIMATION_FRAMES = 4;
         const int SPRITE_HEIGHT = 32;
         const int SPRITE_WIDTH = 32;
         SDL_Rect gSprite[ WALKING_ANIMATION_FRAMES ];
-        
+        // Controls
+        int frame = 0;
+        SDL_RendererFlip flipType = SDL_FLIP_NONE;
+        double degrees = 0;
+        double angle_increment = 30;
+
         struct LTexture gSpriteSheet;
         if( !( LTexture_LoadImage( &gSpriteSheet, "src/images/sprites/player.png" ) ) )
         {
@@ -246,11 +309,6 @@ int main( int argc, char* args[] )
                 gSprite[ f ].h = SPRITE_HEIGHT;
             }
         }
-
-        int frame = 0;
-        SDL_RendererFlip flipType = SDL_FLIP_NONE;
-        double degrees = 0;
-        double angle_increment = 30;
 
         while( !quit )
         {
@@ -318,6 +376,9 @@ int main( int argc, char* args[] )
             // Render Background
             LTexture_Render( &gBackground, 0, 0, NULL, 0.0, NULL, SDL_FLIP_NONE );
 
+            // Render Text
+            LTexture_Render( &gText, 0, 0, NULL, 0.0, NULL, SDL_FLIP_NONE );
+
             // Render Sprite
             SDL_Rect* gSpriteFrame = &gSprite[ frame ];
             LTexture_Render( &gSpriteSheet, 235, 235, gSpriteFrame, degrees, NULL, flipType );
@@ -327,6 +388,7 @@ int main( int argc, char* args[] )
             SDL_RenderPresent( gRenderer );
         }
 
+        LTexture_Free( &gText );
         LTexture_Free( &gSpriteSheet );
         LTexture_Free( &gBackground );
 
