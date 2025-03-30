@@ -127,6 +127,10 @@ int main( int argc, char* args[] )
         // Event handler
         SDL_Event e;
 
+        // Time
+        Uint32 startTime = 0;
+        char timeText[50];
+        
         // Background
         struct LTexture gBackground;
         LTexture_LoadImage( &gBackground, gRenderer, "src/images/backgrounds/day.png" );
@@ -154,8 +158,16 @@ int main( int argc, char* args[] )
             printf( "Failed to load font! SDL_ttf Error: %s\n", TTF_GetError() );
             quit = true;
         }
+        
         struct LTexture gMouseText;
-        if( !( LTexture_LoadText( &gMouseText, gRenderer, "Temporary Text", gFontNormal, textNormalColour ) ) )
+        if( !( LTexture_LoadText( &gMouseText, gRenderer, "Mouse Position: X=0, Y=0", gFontNormal, textNormalColour ) ) )
+        {
+            printf( "Failed to render texture!\n" );
+            quit = true;
+        }
+        
+        struct LTexture gTimeText;
+        if( !( LTexture_LoadText( &gTimeText, gRenderer, "Time since reset: 0ms", gFontNormal, textNormalColour ) ) )
         {
             printf( "Failed to render texture!\n" );
             quit = true;
@@ -249,6 +261,11 @@ int main( int argc, char* args[] )
                     case SDLK_DOWN:
                         degrees = 0;
                         break;
+                    
+                    // Reset clock
+                    case SDLK_RETURN:
+                    startTime = SDL_GetTicks();
+                    break;
 
                     default:
                         break;
@@ -271,8 +288,15 @@ int main( int argc, char* args[] )
                         printf( "Failed to render texture!\n" );
                         quit = true;
                     }
-
                 }
+            }
+
+            // Update Time
+            snprintf( timeText, 50, "Time since reset: %dms", SDL_GetTicks() - startTime );
+            if( !( LTexture_LoadText( &gTimeText, gRenderer, timeText, gFontNormal, textNormalColour ) ) )
+            {
+                printf( "Failed to render texture!\n" );
+                quit = true;
             }
 
             // Update the surface
@@ -286,6 +310,9 @@ int main( int argc, char* args[] )
 
             // Render Mouse Text
             LTexture_Render( &gMouseText, gRenderer, ((SCREEN_WIDTH - gMouseText.mWidth) / 2), 50, NULL, 0.0, NULL, SDL_FLIP_NONE );
+
+            // Render Time Text
+            LTexture_Render( &gTimeText, gRenderer, ((SCREEN_WIDTH - gTimeText.mWidth) / 2), 75, NULL, 0.0, NULL, SDL_FLIP_NONE );
 
             // Render Sprite
             SDL_Rect* gSpriteFrame = &gSprite[ frame ];
